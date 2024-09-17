@@ -1,7 +1,7 @@
 FROM jupyter/pyspark-notebook:latest
 
 # Install Delta Lake dependencies
-RUN pip install delta-spark
+RUN pip install delta-spark minio
 
 # Expose the default port for Jupyter Lab
 EXPOSE 8888
