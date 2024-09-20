@@ -6,9 +6,9 @@ services:
     ports:
       - "8888:8888"  # Exposing Jupyter Lab's default port
     volumes:
-      - ./notebooks:/home/jovyan/work  # Mount a local directory for notebooks
+      - ./notebooks:/home/jupyteruser/work  # Mount a local directory for notebooks
     environment:
-      - SPARK_MASTER=--master spark://spark-master:7077
+      - SPARK_MASTER=spark://spark-master:7077
     depends_on:
       - spark-master
 
@@ -16,7 +16,8 @@ services:
     hostname: spark-master
     container_name: spark-master
     build: ./spark
-    command: bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MODE=master
     volumes:
       - ./spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
     ports:

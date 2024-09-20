@@ -1,6 +1,3 @@
-delta-spark 
-minio 
-grpcio 
-grpcio-status 
-# pyspark==3.5.2
-# pandas==1.0.5
+delta-spark
+minio
+pyspark==3.5.2
