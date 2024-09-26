@@ -15,7 +15,8 @@ services:
   spark-master:
     hostname: spark-master
     container_name: spark-master
-    build: ./spark
+    image: bitnami/spark:3.5.2
+    # build: ./spark
     environment:
       - SPARK_MODE=master
     volumes:
@@ -24,44 +25,44 @@ services:
       - "8080:8080"
       - "7077:7077"
 
-  spark-worker:
-    hostname: spark-worker-1
-    container_name: spark-worker-1
-    build: ./spark
-    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    depends_on:
-      - spark-master
-    environment:
-      SPARK_MODE: worker
-      SPARK_WORKER_CORES: 2
-      SPARK_WORKER_MEMORY: 5g
-      SPARK_MASTER_URL: spark://spark-master:7077
-  minio:
-    hostname: minio
-    container_name: minio
-    image: minio/minio:latest
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    volumes:
-      - minio-data:/data
-    environment:
-      - MINIO_ROOT_USER=minio
-      - MINIO_ROOT_PASSWORD=minio123
-    command: server /data --console-address ":9001"
-  minio_create:
-    hostname: minio_create
-    container_name: minio_create
-    image: minio/minio:latest
-    depends_on:
-      - minio
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 minio minio123;
-      /usr/bin/mc mb myminio/test;
-      /usr/bin/mc policy set public myminio/test;
-      /usr/bin/mc admin user svcacct add --access-key 'sparkaccesskey' --secret-key 'sparksupersecretkey' myminio minio;
-      "
+  # spark-worker:
+  #   hostname: spark-worker-1
+  #   container_name: spark-worker-1
+  #   build: ./spark
+  #   command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+  #   depends_on:
+  #     - spark-master
+  #   environment:
+  #     SPARK_MODE: worker
+  #     SPARK_WORKER_CORES: 2
+  #     SPARK_WORKER_MEMORY: 5g
+  #     SPARK_MASTER_URL: spark://spark-master:7077
+  # minio:
+  #   hostname: minio
+  #   container_name: minio
+  #   image: minio/minio:latest
+  #   ports:
+  #     - '9000:9000'
+  #     - '9001:9001'
+  #   volumes:
+  #     - minio-data:/data
+  #   environment:
+  #     - MINIO_ROOT_USER=minio
+  #     - MINIO_ROOT_PASSWORD=minio123
+  #   command: server /data --console-address ":9001"
+  # minio_create:
+  #   hostname: minio_create
+  #   container_name: minio_create
+  #   image: minio/minio:latest
+  #   depends_on:
+  #     - minio
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #     /usr/bin/mc alias set myminio http://minio:9000 minio minio123;
+  #     /usr/bin/mc mb myminio/test;
+  #     /usr/bin/mc policy set public myminio/test;
+  #     /usr/bin/mc admin user svcacct add --access-key 'sparkaccesskey' --secret-key 'sparksupersecretkey' myminio minio;
+  #     "
 volumes:
   minio-data:
 networks:
