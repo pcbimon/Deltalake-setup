@@ -1,3 +1,0 @@
-delta-spark
-minio
-pyspark==3.5.2

@@ -1,70 +1,66 @@
-version: '3'
+version: '3.8'
 services:
-  jupyter:
-    build: ./jupyterlab
-    container_name: jupyter-pyspark
-    ports:
-      - "8888:8888"  # Exposing Jupyter Lab's default port
-    volumes:
-      - ./notebooks:/home/jupyteruser/work  # Mount a local directory for notebooks
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
-    depends_on:
-      - spark-master
-
   spark-master:
-    hostname: spark-master
+    image: bitnami/spark:3.4.1
     container_name: spark-master
-    image: bitnami/spark:3.5.2
-    # build: ./spark
     environment:
       - SPARK_MODE=master
-    volumes:
-      - ./spark/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
     ports:
-      - "8080:8080"
       - "7077:7077"
+      - "8080:8080"
+    volumes:
+      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./jupyter/notebooks:/home/jupyteruser/work  # Mount volume for CSV file access
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: '4g'
+  spark-worker:
+    image: bitnami/spark:3.4.1
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./jupyter/notebooks:/home/jupyteruser/work  # Mount volume for CSV file access
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: '4g'
 
-  # spark-worker:
-  #   hostname: spark-worker-1
-  #   container_name: spark-worker-1
-  #   build: ./spark
-  #   command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-  #   depends_on:
-  #     - spark-master
-  #   environment:
-  #     SPARK_MODE: worker
-  #     SPARK_WORKER_CORES: 2
-  #     SPARK_WORKER_MEMORY: 5g
-  #     SPARK_MASTER_URL: spark://spark-master:7077
-  # minio:
-  #   hostname: minio
-  #   container_name: minio
-  #   image: minio/minio:latest
-  #   ports:
-  #     - '9000:9000'
-  #     - '9001:9001'
-  #   volumes:
-  #     - minio-data:/data
-  #   environment:
-  #     - MINIO_ROOT_USER=minio
-  #     - MINIO_ROOT_PASSWORD=minio123
-  #   command: server /data --console-address ":9001"
-  # minio_create:
-  #   hostname: minio_create
-  #   container_name: minio_create
-  #   image: minio/minio:latest
-  #   depends_on:
-  #     - minio
-  #   entrypoint: >
-  #     /bin/sh -c "
-  #     /usr/bin/mc alias set myminio http://minio:9000 minio minio123;
-  #     /usr/bin/mc mb myminio/test;
-  #     /usr/bin/mc policy set public myminio/test;
-  #     /usr/bin/mc admin user svcacct add --access-key 'sparkaccesskey' --secret-key 'sparksupersecretkey' myminio minio;
-  #     "
-volumes:
-  minio-data:
-networks:
-  default:
-    driver: bridge
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+    volumes:
+      - ./minio/data:/data
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  jupyterlab:
+    build:
+      context: ./jupyter
+      dockerfile: Dockerfile
+    container_name: jupyterlab
+    volumes:
+      - ./jupyter/notebooks:/home/jupyteruser/work
+    ports:
+      - "8888:8888"
+    depends_on:
+      - spark-master
+      - spark-worker
+      - minio
+    links:
+      - spark-master
+      - spark-worker
